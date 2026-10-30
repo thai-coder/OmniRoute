@@ -94,6 +94,8 @@
   },
   "homepage": "https://omniroute.online",
   "scripts": {
+    "vercel:deploy": "vercel build --prod && vercel deploy --prebuilt --prod",
+    "vercel:update": "git pull && npm install && npm run vercel:deploy",
     "dev": "node --max-old-space-size=8192 scripts/dev/run-next.mjs dev",
     "dev:candidate": "node scripts/dev/candidate.mjs",
     "prebuild:docs": "node scripts/docs/gen-openapi-module.mjs",

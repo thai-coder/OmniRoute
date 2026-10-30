@@ -19,7 +19,7 @@
 
 ---
 
-## 2. Quy Trình Build Cục Bộ & Deploy Lên Vercel
+## 2. Quy Trình 6 Bước Build Cục Bộ & Deploy Lên Vercel
 
 Để đưa toàn bộ quy trình này về xử lý cục bộ trên máy tính cá nhân và đẩy thẳng lên Vercel, bạn mở Terminal (hoặc Command Prompt/PowerShell) và chạy tuần tự các lệnh sau:
 
@@ -78,4 +78,30 @@ vercel deploy --prebuilt --prod
 
 ---
 
-> **Kết luận:** Toàn bộ gánh nặng phần cứng giờ đây đã do máy tính cá nhân của bạn chịu trách nhiệm. Máy chủ Vercel chỉ việc nhận kết quả cuối cùng ở bước 6 để phát sóng website ra internet. Quá trình deploy của bạn sẽ luôn ổn định và không bao giờ gặp lại lỗi sập RAM nữa.
+## 3. Tối Ưu Hóa Quy Trình Với Lệnh Tắt (NPM Scripts)
+
+Để không cần phải nhớ hay gõ tuần tự nhiều lệnh, dự án đã được tích hợp sẵn 2 phím tắt trong `package.json`:
+
+```json
+"scripts": {
+  "vercel:deploy": "vercel build --prod && vercel deploy --prebuilt --prod",
+  "vercel:update": "git pull && npm install && npm run vercel:deploy"
+}
+```
+
+### 🚀 Lệnh 1: `npm run vercel:deploy`
+
+- **Tác dụng:** Dùng khi bạn vừa tự tay chỉnh sửa code trên máy tính và muốn đẩy thẳng lên web.
+- **Cơ chế:** Hệ thống tự động chạy `vercel build --prod`. Ký hiệu `&&` đảm bảo chỉ khi build thành công 100%, lệnh `vercel deploy --prebuilt --prod` mới được kích hoạt để bắn bản build lên Vercel.
+
+### ☕ Lệnh 2: `npm run vercel:update`
+
+- **Tác dụng:** Dùng khi muốn đồng bộ phiên bản mới nhất từ GitHub lên web chỉ với **1 lệnh duy nhất**.
+- **Cơ chế:**
+  1. Chạy `git pull` để lấy toàn bộ code mới nhất về máy tính.
+  2. Chạy `npm install` để cập nhật các thư viện mới (nếu có).
+  3. Tự động gọi tiếp `npm run vercel:deploy` để build cục bộ và deploy lên Vercel.
+
+---
+
+> **Kết luận:** Toàn bộ gánh nặng phần cứng giờ đây đã do máy tính cá nhân của bạn chịu trách nhiệm. Máy chủ Vercel chỉ việc nhận kết quả cuối cùng để phát sóng website ra internet. Quá trình deploy của bạn sẽ luôn ổn định và không bao giờ gặp lại lỗi sập RAM nữa.
