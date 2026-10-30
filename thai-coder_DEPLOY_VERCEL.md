@@ -104,4 +104,63 @@ vercel deploy --prebuilt --prod
 
 ---
 
+## 4. Lỗi `NEXT_OUTPUT_DIR_MISSING` và cách đã sửa
+
+**Triệu chứng:** `vercel build --prod` build xong Next.js nhưng báo _"The Next.js output directory .next was not found"_.
+
+**Nguyên nhân:** `next.config.mjs` ghi output ra `.build/next` (biến `NEXT_DIST_DIR`) và mặc định bật `output: "standalone"` (dành cho Docker/VPS). Vercel chỉ tìm ở `.next`.
+
+**Cách sửa:** thêm 2 biến môi trường vào Vercel project (môi trường Production):
+
+| Biến                        | Giá trị | Tác dụng                               |
+| --------------------------- | ------- | -------------------------------------- |
+| `NEXT_DIST_DIR`             | `.next` | Ghi output vào thư mục Vercel mong đợi |
+| `OMNIROUTE_SKIP_STANDALONE` | `1`     | Tắt đóng gói standalone                |
+
+### Thêm bằng CLI (từ thư mục dự án)
+
+```bash
+vercel env add NEXT_DIST_DIR --environment production --value .next --no-sensitive --yes
+vercel env add OMNIROUTE_SKIP_STANDALONE --environment production --value 1 --no-sensitive --yes
+vercel env ls --environment production
+```
+
+Hoặc thêm trên web: Vercel → Project `omni-route` → Settings → Environment Variables.
+
+> ⚠️ **Bắt buộc dùng `--no-sensitive` (kiểu Config), không để kiểu Secret/Sensitive.** Biến Sensitive khi `vercel pull` chỉ trả về chuỗi `[SENSITIVE]`, build sẽ ghi output vào thư mục tên `[SENSITIVE]`. Nếu đã lỡ tạo, xóa thư mục `[SENSITIVE]` ở gốc dự án và thêm lại bằng `--force`.
+
+### Kiểm tra sau khi `vercel pull`
+
+```bash
+vercel pull --yes --environment=production
+grep -n "NEXT_DIST_DIR\|OMNIROUTE_SKIP" .vercel/.env.production.local
+# phải thấy: NEXT_DIST_DIR=".next" và OMNIROUTE_SKIP_STANDALONE="1"
+```
+
+### Script `npm run vercel:deploy`
+
+Script đã gồm cả bước `vercel pull`, nên biến môi trường luôn được cập nhật trước khi build:
+
+```json
+"vercel:deploy": "vercel pull --yes --environment=production && vercel build --prod && vercel deploy --prebuilt --prod"
+```
+
+### GitHub Actions
+
+`.github/workflows/deploy-vercel.yml` đã được viết đầy đủ (chạy khi push lên `main` hoặc bấm tay ở tab Actions → Deploy to Vercel → Run workflow). Nó chạy `vercel pull` trước `vercel build` nên tự nhận 2 biến trên.
+
+Cần tạo 3 secret ở GitHub: repo `thai-coder/OmniRoute` → Settings → Secrets and variables → Actions → New repository secret:
+
+| Secret              | Lấy ở đâu                                |
+| ------------------- | ---------------------------------------- |
+| `VERCEL_TOKEN`      | vercel.com/account/tokens → Create Token |
+| `VERCEL_ORG_ID`     | `orgId` trong `.vercel/project.json`     |
+| `VERCEL_PROJECT_ID` | `projectId` trong `.vercel/project.json` |
+
+### Lưu ý khi chạy
+
+Ứng dụng dùng SQLite (`better-sqlite3`), worker và child process. Serverless của Vercel có hệ thống file chỉ đọc nên build qua được vẫn có thể lỗi khi chạy. Nếu gặp lỗi runtime, VPS/Docker phù hợp hơn.
+
+---
+
 > **Kết luận:** Toàn bộ gánh nặng phần cứng giờ đây đã do máy tính cá nhân của bạn chịu trách nhiệm. Máy chủ Vercel chỉ việc nhận kết quả cuối cùng để phát sóng website ra internet. Quá trình deploy của bạn sẽ luôn ổn định và không bao giờ gặp lại lỗi sập RAM nữa.
